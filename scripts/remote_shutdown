@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ "$#" -lt "1" ] ; then
+  echo "Please specify a remote"
+  exit 1
+fi
+
+REMOTE="${1}"
+
+ssh "${REMOTE}" gnome-session-quit --power-off --force

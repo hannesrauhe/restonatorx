@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$#" -lt "1" ] ; then
+  echo "Don't know what to say"
+  exit 1
+fi
+
+echo "$@"
