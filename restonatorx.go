@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
-	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/hannesrauhe/freeps"
@@ -30,19 +29,19 @@ func FritzHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	fn := vars["function"]
 	dev := vars["device"]
-	arg := vars["arg"]
+	arg := make(map[string]string)
+	for key, value := range r.URL.Query() {
+		arg[key] = value[0]
+	}
 	fmt.Fprintf(w, "Fritz: %v, %v, %v", fn, dev, arg)
 	if fn == "wakeup" {
 		f.WakeUpDevice(dev)
-	} else if fn == "level" {
-		i, err := strconv.Atoi(arg)
+	} else {
+		err := f.HomeAutoSwitch(fn, dev, arg)
 		if err != nil {
 			w.WriteHeader(http.StatusNotAcceptable)
 			return
 		}
-		f.SetLevel(dev, i)
-	} else {
-		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
@@ -50,8 +49,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/exec/{script:[a-z0-9_]+}/{arg:[a-z0-9_]+}", ExecHandler)
 	r.HandleFunc("/script/{script:[a-z0-9_]+}/{arg:[a-z0-9_]+}", ExecHandler)
-	r.HandleFunc("/fritz/{function}/{device:[a-z0-9]+}", FritzHandler)
-	r.HandleFunc("/fritz/{function}/{device}/{arg}", FritzHandler)
+	r.HandleFunc("/fritz/{function}/{device}", FritzHandler)
 
 	log.Println("Starting Server")
 	log.Fatal(http.ListenAndServe(":8000", r))
