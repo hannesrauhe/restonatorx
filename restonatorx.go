@@ -33,16 +33,17 @@ func FritzHandler(w http.ResponseWriter, r *http.Request) {
 	for key, value := range r.URL.Query() {
 		arg[key] = value[0]
 	}
-	fmt.Fprintf(w, "Fritz: %v, %v, %v", fn, dev, arg)
+	var err error
 	if fn == "wakeup" {
-		f.WakeUpDevice(dev)
+		err = f.WakeUpDevice(dev)
 	} else {
-		err := f.HomeAutoSwitch(fn, dev, arg)
-		if err != nil {
-			w.WriteHeader(http.StatusNotAcceptable)
-			return
-		}
+		err = f.HomeAutoSwitch(fn, dev, arg)
 	}
+	if err != nil {
+		w.WriteHeader(http.StatusNotAcceptable)
+		return
+	}
+	fmt.Fprintf(w, "Fritz: %v, %v, %v", fn, dev, arg)
 }
 
 func main() {
