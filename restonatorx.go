@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -28,6 +29,21 @@ func FritzHandler(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	fn := vars["function"]
+	if fn == "getdevicelistinfos" {
+		devl, err := f.GetDeviceList()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		jsonbytes, err := json.MarshalIndent(devl, "", "  ")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Write(jsonbytes)
+		return
+	}
+
 	dev := vars["device"]
 	arg := make(map[string]string)
 	for key, value := range r.URL.Query() {
@@ -50,6 +66,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/exec/{script:[a-z0-9_]+}/{arg:[a-z0-9_]+}", ExecHandler)
 	r.HandleFunc("/script/{script:[a-z0-9_]+}/{arg:[a-z0-9_]+}", ExecHandler)
+	r.HandleFunc("/fritz/{function}", FritzHandler)
 	r.HandleFunc("/fritz/{function}/{device}", FritzHandler)
 
 	log.Println("Starting Server")
