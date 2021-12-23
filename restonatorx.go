@@ -51,12 +51,14 @@ func FritzHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	var err error
 	if fn == "wakeup" {
+		log.Printf("Waking Up %v", dev)
 		err = f.WakeUpDevice(dev)
 	} else {
 		err = f.HomeAutoSwitch(fn, dev, arg)
 	}
 	if err != nil {
-		w.WriteHeader(http.StatusNotAcceptable)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "FritzHandler\nParameters: %v\nError: %v", vars, string(err.Error()))
 		return
 	}
 	fmt.Fprintf(w, "Fritz: %v, %v, %v", fn, dev, arg)
