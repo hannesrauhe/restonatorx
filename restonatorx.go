@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os/exec"
 
 	"github.com/gorilla/mux"
@@ -64,12 +65,42 @@ func FritzHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Fritz: %v, %v, %v", fn, dev, arg)
 }
 
+func DenonHandler(w http.ResponseWriter, r *http.Request) {
+	denon_address := "192.168.170.26"
+	c := http.Client{}
+	vars := mux.Vars(r)
+	var cmd string
+
+	switch vars["function"] {
+	case "on":
+		cmd = "PutSystem_OnStandby/ON"
+	case "off":
+		cmd = "PutSystem_OnStandby/STANDBY"
+	default:
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	data_url := "http://" + denon_address + "/MainZone/index.put.asp"
+	data := url.Values{}
+	data.Set("cmd0", cmd)
+
+	data_resp, err := c.PostForm(data_url, data)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "DenonHandler\nParameters: %v\nError: %v", vars, string(err.Error()))
+		return
+	}
+	fmt.Fprintf(w, "Denon: %v, %v", vars, data_resp)
+}
+
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/exec/{script:[a-z0-9_]+}/{arg:[a-z0-9_]+}", ExecHandler)
 	r.HandleFunc("/script/{script:[a-z0-9_]+}/{arg:[a-z0-9_]+}", ExecHandler)
 	r.HandleFunc("/fritz/{function}", FritzHandler)
 	r.HandleFunc("/fritz/{function}/{device}", FritzHandler)
+	r.HandleFunc("/denon/{function}", DenonHandler)
 
 	log.Println("Starting Server")
 	log.Fatal(http.ListenAndServe(":8000", r))
